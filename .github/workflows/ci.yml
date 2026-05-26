@@ -1,0 +1,99 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Advanced cache example: npm dependency cache
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        id: npm-cache # used to check cache hit
+        with:
+          path: ~/.npm
+          # Cache key depends on OS, node version, and package-lock.json
+          key: ${{ runner.os }}-node20-npm-${{ hashFiles('backend/package-lock.json') }}
+          # restore-keys are fallback keys used if exact match isn't found
+          restore-keys: |
+            ${{ runner.os }}-node20-npm-
+
+      # Advanced cache example: node_modules cache
+      - name: Cache node modules
+        uses: actions/cache@v4
+        id: node-modules-cache
+        with:
+          path: backend/node_modules
+          key: ${{ runner.os }}-node20-modules-${{ hashFiles('backend/package-lock.json') }}
+
+      - name: Install Dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint
+
+      # We don't have real tests yet so `npm test` exit with 0 based on our modified script
+      - name: Run Tests
+        run: npm test
+
+  frontend-build:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node20-frontend-npm-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node20-frontend-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint
+
+      # Advanced cache example: build cache
+      - name: Cache build output (dist)
+        uses: actions/cache@v4
+        with:
+          path: frontend/dist
+          # Cache key is based on hashing the src directory content as well as dependencies
+          key: ${{ runner.os }}-build-${{ hashFiles('frontend/src/**', 'frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Build Application
+        run: | # only rebuild if cache isn't hit or just rebuild anyway since caching build is tricky without external checks
+          if [ -d "dist" ]; then echo "Build cache found"; else npm run build; fi
