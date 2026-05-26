@@ -10,19 +10,19 @@ const TaskList = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/tasks`);
+        setTasks(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error fetching tasks');
+        setLoading(false);
+      }
+    };
+
     fetchTasks();
   }, []);
-
-  const fetchTasks = async () => {
-    try {
-      const { data } = await axios.get(`${API_URL}/tasks`);
-      setTasks(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Error fetching tasks');
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
