@@ -45,7 +45,7 @@ jobs:
 
       - name: Install Dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: npm ci
+        run: npm install
 
       - name: Run Lint
         run: npm run lint
@@ -79,7 +79,7 @@ jobs:
             ${{ runner.os }}-node20-frontend-npm-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Lint
         run: npm run lint
